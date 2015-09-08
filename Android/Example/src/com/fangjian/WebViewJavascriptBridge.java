@@ -29,6 +29,7 @@ public class WebViewJavascriptBridge implements Serializable {
     WVJBHandler _messageHandler;
     Map<String,WVJBHandler> _messageHandlers;
     Map<String,WVJBResponseCallback> _responseCallbacks;
+    LoadFinishedCallback mLoadFinishedCallback;
     long _uniqueId;
 
     public WebViewJavascriptBridge(Activity context,WebView webview,WVJBHandler handler) {
@@ -49,8 +50,24 @@ public class WebViewJavascriptBridge implements Serializable {
     private void loadWebViewJavascriptBridgeJs(WebView webView) {
         InputStream is=mContext.getResources().openRawResource(R.raw.webviewjavascriptbridge);
         String script=convertStreamToString(is);
-        webView.loadUrl("javascript:"+script);
 
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            // In KitKat+ you should use the evaluateJavascript method
+            webView.evaluateJavascript(script, new ValueCallback<String>() {
+
+                @Override
+                public void onReceiveValue(String s) {
+                    Log.v("", "");
+                }
+            });
+        } else {
+            /**
+             * For pre-KitKat+ you should use loadUrl("javascript:<JS Code Here>");
+             * To then call back to Java you would need to use addJavascriptInterface()
+             * and have your JS call the interface
+             **/
+            webView.loadUrl("javascript:"+script);
+        }
     }
 
     public static String convertStreamToString(java.io.InputStream is) {
@@ -70,6 +87,8 @@ public class WebViewJavascriptBridge implements Serializable {
         public void onPageFinished(WebView webView, String url) {
             Log.d("test", "onPageFinished");
             loadWebViewJavascriptBridgeJs(webView);
+            if(mLoadFinishedCallback != null)
+                mLoadFinishedCallback.onLoadFinished();
         }
     }
 
@@ -92,6 +111,10 @@ public class WebViewJavascriptBridge implements Serializable {
             return true;
         }
     }
+    
+    public void setLoadFinishedCallback(LoadFinishedCallback callback){
+        mLoadFinishedCallback = callback;
+    }
 
     public interface WVJBHandler{
         public void handle(String data,WVJBResponseCallback jsCallback);
@@ -99,6 +122,10 @@ public class WebViewJavascriptBridge implements Serializable {
 
     public interface WVJBResponseCallback{
         public void callback(String data);
+    }
+    
+    public interface LoadFinishedCallback{
+        public void onLoadFinished();
     }
 
     public void registerHandler(String handlerName,WVJBHandler handler) {
