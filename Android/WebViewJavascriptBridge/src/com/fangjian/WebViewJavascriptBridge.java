@@ -30,6 +30,7 @@ public class WebViewJavascriptBridge implements Serializable {
     Map<String,WVJBHandler> _messageHandlers;
     Map<String,WVJBResponseCallback> _responseCallbacks;
     long _uniqueId;
+    WebViewClient mCustomWebClient;
 
     public WebViewJavascriptBridge(Activity context,WebView webview,WVJBHandler handler) {
         this.mContext=context;
@@ -78,10 +79,27 @@ public class WebViewJavascriptBridge implements Serializable {
     }
 
     private class MyWebViewClient extends WebViewClient {
+
+        @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            super.onPageStarted(view, url, favicon);
+            if(mCustomWebClient != null)
+                mCustomWebClient.onPageStarted(view, url, favicon);
+        }
+
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler,
+                                       SslError error) {
+            if(mCustomWebClient != null)
+                mCustomWebClient.onReceivedSslError(view, handler, error);
+        }
+
         @Override
         public void onPageFinished(WebView webView, String url) {
             Log.d("test", "onPageFinished");
             loadWebViewJavascriptBridgeJs(webView);
+            if(mCustomWebClient != null)
+                mCustomWebClient.onPageFinished(webView, url);
         }
     }
 
@@ -103,6 +121,10 @@ public class WebViewJavascriptBridge implements Serializable {
             Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
             return true;
         }
+    }
+
+    public void setCustomWebViewClient(WebViewClient webViewClient){
+        mCustomWebClient = webViewClient;
     }
 
     public interface WVJBHandler{
