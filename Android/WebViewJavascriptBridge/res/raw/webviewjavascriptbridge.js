@@ -30,7 +30,7 @@
 			message['callbackId'] = callbackId
 			}
 				console.log("sending:"+JSON.stringify(message));
-		_WebViewJavascriptBridge._handleMessageFromJs(message.data||null,message.responseId||null,
+		_WebViewJavascriptBridge._handleMessageFromJs((typeof message.data == 'string') && message.data.constructor==String ? message.data : JSON.stringify(message.data)||null,message.responseId||null,
 		    message.responseData||null,message.callbackId||null,message.handlerName||null);
 
 	}
@@ -42,7 +42,7 @@
 			if (message.responseId) {
 				var responseCallback = responseCallbacks[message.responseId]
 				if (!responseCallback) { return; }
-				responseCallback(message.responseData)
+				responseCallback((typeof message.responseData == 'string') && message.responseData.constructor==String ? message.responseData : JSON.parse(message.responseData))
 				delete responseCallbacks[message.responseId]
 			} else {
 				var responseCallback
